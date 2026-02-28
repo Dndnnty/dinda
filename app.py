@@ -514,6 +514,20 @@ def create_app() -> Flask:
             rel = os.path.relpath(job["hac_dendrogram_path"], os.path.join(BASE_DIR, "static"))
             dendro_url = url_for("static", filename=rel.replace("\\", "/"))
 
+        # Fallback regenerasi scatter HAC jika hilang atau berukuran sangat kecil
+        try:
+            need_hac_scatter = (not job.get("hac_scatter_path")) or (not os.path.exists(job["hac_scatter_path"])) or (
+                os.path.exists(job.get("hac_scatter_path")) and os.path.getsize(job["hac_scatter_path"]) < 2048
+            )
+            if need_hac_scatter and job.get("hac_result_path") and os.path.exists(job["hac_result_path"]):
+                df_h_tmp = pd.read_csv(job["hac_result_path"])
+                if "cluster_hac" in df_h_tmp.columns:
+                    p = os.path.join(STATIC_GEN_DIR, f"sebaran_hac_job_{job_id}_regen.png")
+                    buat_plot_sebaran_cluster(df_h_tmp, "cluster_hac", p, "Sebaran Cluster HAC (Volume vs Jenis)")
+                    _update_job(job_id, {"hac_scatter_path": p})
+        except Exception as _e:
+            _append_log(int(job_id), f"Error fallback scatter HAC: {_e}")
+
         if job.get("hac_result_path") and os.path.exists(job["hac_result_path"]):
             df_hac, hasil_hac, hasil_hac_all = _read_result_display(job["hac_result_path"])
             karakter_hac = bangun_tabel_karakteristik_cluster(df_hac, "cluster_hac").to_dict(orient="records")

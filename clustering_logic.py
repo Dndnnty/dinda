@@ -553,18 +553,18 @@ def buat_plot_sebaran_cluster(
     y = df["jenis_pestisida_kode"].astype(float).values
     label = df[kolom_label].astype(int).values
 
-    plt.figure(figsize=(12, 6), facecolor="#0f172a")
+    plt.figure(figsize=(12, 6), facecolor="#ffffff")
     ax = plt.gca()
-    ax.set_facecolor("#0f172a")
-    ax.spines["left"].set_color("#cbd5e1")
-    ax.spines["bottom"].set_color("#cbd5e1")
-    ax.spines["top"].set_color("#0f172a")
-    ax.spines["right"].set_color("#0f172a")
-    ax.tick_params(axis="both", colors="#e5e7eb", labelsize=9)
+    ax.set_facecolor("#ffffff")
+    ax.spines["left"].set_color("#0f172a")
+    ax.spines["bottom"].set_color("#0f172a")
+    ax.spines["top"].set_color("#ffffff")
+    ax.spines["right"].set_color("#ffffff")
+    ax.tick_params(axis="both", colors="#0f172a", labelsize=9)
     if x.size and y.size:
         plt.scatter(x, y, c=label, cmap="tab20", s=18, alpha=0.85)
     else:
-        plt.text(0.5, 0.5, "Tidak ada data untuk divisualisasikan", color="#e5e7eb", ha="center", va="center", transform=ax.transAxes)
+        plt.text(0.5, 0.5, "Tidak ada data untuk divisualisasikan", color="#334155", ha="center", va="center", transform=ax.transAxes)
     handles: List[Line2D] = []
     if "is_medoid" in df.columns:
         is_medoid = df["is_medoid"].astype(bool).values

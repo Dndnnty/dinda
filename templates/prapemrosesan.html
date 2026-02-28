@@ -13,8 +13,8 @@
           <div class="mt-1 text-xs text-slate-200/70">File: {{ job.original_filename }}</div>
         </div>
         <div class="flex items-center gap-2">
-          <form method="post" onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerHTML='Memproses...';">
-            <button type="submit" class="rounded-xl bg-indigo-500/70 hover:bg-indigo-500/80 border border-indigo-400/50 px-4 py-2 text-sm font-semibold">
+          <form id="preForm" method="post" onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerHTML='Memproses...';">
+            <button id="preBtn" type="submit" class="rounded-xl bg-indigo-500/70 hover:bg-indigo-500/80 border border-indigo-400/50 px-4 py-2 text-sm font-semibold">
               Jalankan Prapemrosesan
             </button>
           </form>
@@ -145,7 +145,7 @@
                 Kolom baru hasil transformasi: {{ kolom_tambahan|join(', ') }}
               </div>
             {% endif %}
-            <div class="mt-3 overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-white/10">
+            <div id="preview-pre-wrap" class="mt-3 overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-white/10">
               <table class="min-w-full text-xs align-top">
                 <thead class="bg-black/20">
                   <tr>
@@ -166,7 +166,7 @@
               </table>
             </div>
           {% else %}
-            <div id="pre-placeholder" class="mt-3 text-sm text-slate-200/70">
+            <div id="preview-pre-wrap" class="mt-3 text-sm text-slate-200/70">
                {% if job.status == 'preprocessing' %}
                  <div class="flex items-center gap-2">
                     <svg class="animate-spin h-4 w-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -241,7 +241,7 @@
     <div class="rounded-xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm p-6 lg:sticky lg:top-6 h-fit">
       <div class="text-lg font-semibold">Ringkasan</div>
       {% if ringkasan %}
-        <div class="mt-4 space-y-3 text-sm text-slate-200/85">
+        <div id="ringkasan-wrap" class="mt-4 space-y-3 text-sm text-slate-200/85">
           <div class="flex justify-between rounded-xl bg-black/20 border border-white/10 px-4 py-3">
             <span>Jumlah awal</span><span class="font-semibold">{{ ringkasan.jumlah_awal }}</span>
           </div>
@@ -288,7 +288,7 @@
           {% endif %}
         </div>
       {% else %}
-        <div class="mt-3 text-sm text-slate-200/70">Ringkasan akan muncul setelah prapemrosesan.</div>
+        <div id="ringkasan-wrap" class="mt-3 text-sm text-slate-200/70">Ringkasan akan muncul setelah prapemrosesan.</div>
       {% endif %}
 
       <div class="mt-6">
@@ -336,6 +336,38 @@
       preForm.addEventListener("submit", () => {
         overlay.classList.remove("hidden");
         if (preBtn) preBtn.disabled = true;
+        // Mulai polling segera saat submit agar tidak perlu klik ulang
+        try {
+          if (typeof window._prePollHandle !== "undefined") {
+            clearInterval(window._prePollHandle);
+          }
+        } catch {}
+        window._prePollHandle = setInterval(async () => {
+          try {
+            const r = await fetch(`/api/job/${jobId}/status`);
+            if (!r.ok) return;
+            const data = await r.json();
+            if (data.status === 'preprocessed') {
+              clearInterval(window._prePollHandle);
+              overlay.classList.add("hidden");
+              // Lakukan partial update agar hasil langsung muncul
+              try {
+                const rx = await fetch(`/prapemrosesan`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (rx.ok) {
+                  const jx = await rx.json();
+                  const previewWrap = document.getElementById("preview-pre-wrap");
+                  const ringkasanWrap = document.getElementById("ringkasan-wrap");
+                  if (jx.preview_pre_html && previewWrap) previewWrap.innerHTML = jx.preview_pre_html;
+                  if (jx.ringkasan_html && ringkasanWrap) ringkasanWrap.innerHTML = jx.ringkasan_html;
+                } else {
+                  window.location.reload();
+                }
+              } catch {
+                window.location.reload();
+              }
+            }
+          } catch {}
+        }, 2000);
       });
     }
   </script>
@@ -346,10 +378,10 @@
   document.addEventListener("DOMContentLoaded", () => {
     const jobId = {{ job.id }};
     const loadingIndicator = document.getElementById("loading-indicator");
-    const prePlaceholder = document.getElementById("pre-placeholder");
+    const previewWrap = document.getElementById("preview-pre-wrap");
+    const ringkasanWrap = document.getElementById("ringkasan-wrap");
     const overlay = document.getElementById("overlayLoading");
     
-    // Status polling
     let pollInterval = null;
 
     async function checkStatus() {
@@ -357,19 +389,16 @@
         const r = await fetch(`/api/job/${jobId}/status`);
         if (!r.ok) return;
         const data = await r.json();
-        
-        // Jika status berubah jadi 'preprocessed' (selesai), reload page
         if (data.status === 'preprocessed') {
            if (loadingIndicator) loadingIndicator.classList.remove("hidden");
            if (overlay) overlay.classList.add("hidden");
-           window.location.reload();
+           clearInterval(pollInterval);
+           await updatePartial();
         } 
-        // Jika masih preprocessing, pastikan UI loading terlihat
         else if (data.status === 'preprocessing') {
            if (loadingIndicator) loadingIndicator.classList.remove("hidden");
            if (overlay) overlay.classList.remove("hidden");
         }
-        // Jika error
         else if (data.status === 'error') {
            clearInterval(pollInterval);
            alert("Terjadi kesalahan: " + data.last_error);
@@ -381,12 +410,29 @@
       }
     }
 
-    // Mulai polling jika status saat ini adalah 'preprocessing'
-    // Atau jika kita baru saja submit form (bisa dideteksi dari server-side rendering status)
     const currentStatus = "{{ job.status }}";
     if (currentStatus === 'preprocessing') {
        pollInterval = setInterval(checkStatus, 2000);
        if (overlay) overlay.classList.remove("hidden");
+    }
+
+    async function updatePartial() {
+      try {
+        const r = await fetch(`/prapemrosesan`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!r.ok) { window.location.reload(); return; }
+        const data = await r.json();
+        if (data.preview_pre_html && previewWrap) {
+          previewWrap.innerHTML = data.preview_pre_html;
+        }
+        if (data.ringkasan_html && ringkasanWrap) {
+          ringkasanWrap.innerHTML = data.ringkasan_html;
+        }
+        if (!data.preview_pre_html) {
+          window.location.reload();
+        }
+      } catch {
+        window.location.reload();
+      }
     }
   });
 </script>

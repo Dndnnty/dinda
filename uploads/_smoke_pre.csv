@@ -1,9 +1,0 @@
-RETAILER NAME (R1),JENIS PESTISIDA,PACKAGING,VOLUME (L/KG),jenis_pestisida_kode,packaging_kode_angka,volume_normalisasi
-A,Insektisida,Botol,10.0,1,1,0.2857142857142857
-B,Herbisida,Botol,12.0,2,1,0.35714285714285715
-C,Fungisida,Sachet,2.0,3,3,0.0
-D,Insektisida,Sachet,3.0,1,3,0.03571428571428571
-E,Herbisida,Botol,13.0,2,1,0.39285714285714285
-F,Fungisida,Jerigen,30.0,3,2,1.0
-G,Zat Pengatur Tumbuh,Jerigen,25.0,4,2,0.8214285714285714
-H,Insektisida,Botol,11.0,1,1,0.32142857142857145
