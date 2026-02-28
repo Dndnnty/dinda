@@ -553,8 +553,18 @@ def buat_plot_sebaran_cluster(
     y = df["jenis_pestisida_kode"].astype(float).values
     label = df[kolom_label].astype(int).values
 
-    plt.figure(figsize=(12, 6))
-    plt.scatter(x, y, c=label, cmap="tab20", s=18, alpha=0.85)
+    plt.figure(figsize=(12, 6), facecolor="#0f172a")
+    ax = plt.gca()
+    ax.set_facecolor("#0f172a")
+    ax.spines["left"].set_color("#cbd5e1")
+    ax.spines["bottom"].set_color("#cbd5e1")
+    ax.spines["top"].set_color("#0f172a")
+    ax.spines["right"].set_color("#0f172a")
+    ax.tick_params(axis="both", colors="#e5e7eb", labelsize=9)
+    if x.size and y.size:
+        plt.scatter(x, y, c=label, cmap="tab20", s=18, alpha=0.85)
+    else:
+        plt.text(0.5, 0.5, "Tidak ada data untuk divisualisasikan", color="#e5e7eb", ha="center", va="center", transform=ax.transAxes)
     handles: List[Line2D] = []
     if "is_medoid" in df.columns:
         is_medoid = df["is_medoid"].astype(bool).values
@@ -608,8 +618,12 @@ def buat_plot_sebaran_cluster(
                 cy_list.append(float(np.mean(y[mask])))
                 cid_list.append(int(c))
         if cx_list and cy_list:
+            xmin = float(np.min(x)) if x.size else 0.0
+            xmax = float(np.max(x)) if x.size else 1.0
+            xrng = max(1e-6, xmax - xmin)
+            left_x = xmin - 0.06 * xrng
             plt.scatter(
-                np.array(cx_list, dtype=float),
+                np.array([left_x] * len(cy_list), dtype=float),
                 np.array(cy_list, dtype=float),
                 s=120,
                 marker="*",
@@ -630,19 +644,23 @@ def buat_plot_sebaran_cluster(
                     label="Centroid (HAC)",
                 )
             )
-            for cid, px, py in zip(cid_list, cx_list, cy_list):
+            for cid, py in zip(cid_list, cy_list):
                 plt.annotate(
                     f"Pusat Cluster {int(cid)}",
-                    (px, py),
-                    xytext=(8, 8),
+                    (left_x, py),
+                    xytext=(10, 0),
                     textcoords="offset points",
                     fontsize=9,
                     fontweight="bold",
                     color="#fbbf24",
                     bbox={"boxstyle": "round,pad=0.25", "fc": "#0f172a", "ec": "#fbbf24", "alpha": 0.75},
                     ha="left",
-                    va="bottom",
+                    va="center",
                 )
+            cur_xlim = plt.xlim()
+            new_left = min(cur_xlim[0], left_x - 0.02 * xrng)
+            new_right = max(cur_xlim[1], xmax + 0.02 * xrng)
+            plt.xlim(new_left, new_right)
     plt.title(judul)
     plt.xlabel("Volume (Normalisasi Min–Maks)")
     plt.ylabel("Kode Jenis Pestisida")

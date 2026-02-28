@@ -440,7 +440,7 @@ def create_app() -> Flask:
                 return redirect(url_for("clustering"))
 
             jumlah_cluster_hac = int(request.form.get("jumlah_cluster_hac", "4") or 4)
-            hac_method = (request.form.get("hac_method", "ward") or "ward").lower()
+            hac_method = "single"
             k_kmedoids = int(request.form.get("k_kmedoids", "4") or 4)
             max_iter = int(request.form.get("max_iter", "25") or 25)
 
@@ -956,16 +956,32 @@ def _task_clustering(
             df_hac["cluster_hac"] = label_hac
             cb("Membuat peta distribusi cluster (HAC)...")
             scatter_hac = os.path.join(STATIC_GEN_DIR, f"sebaran_hac_{mtag}_job_{job_id}_{ts}.png")
-            buat_plot_sebaran_cluster(df_hac, "cluster_hac", scatter_hac, "Sebaran Cluster HAC (Volume vs Jenis)")
+            try:
+                buat_plot_sebaran_cluster(df_hac, "cluster_hac", scatter_hac, "Sebaran Cluster HAC (Volume vs Jenis)")
+                if os.path.exists(scatter_hac):
+                    _append_log(job_id, f"Scatter HAC dibuat: {os.path.basename(scatter_hac)} [{os.path.getsize(scatter_hac)} bytes]")
+                else:
+                    _append_log(job_id, "Scatter HAC gagal dibuat: file tidak ditemukan")
+            except Exception as _e:
+                _append_log(job_id, f"Error membuat scatter HAC: {_e}")
             cb("Membuat diagram batang ukuran cluster (HAC)...")
             hac_size_bar = os.path.join(STATIC_GEN_DIR, f"ukuran_cluster_hac_{mtag}_job_{job_id}_{ts}.png")
-            buat_plot_ukuran_cluster_batang(df_hac, "cluster_hac", hac_size_bar, "Ukuran Cluster HAC (Jumlah Anggota)")
+            try:
+                buat_plot_ukuran_cluster_batang(df_hac, "cluster_hac", hac_size_bar, "Ukuran Cluster HAC (Jumlah Anggota)")
+            except Exception as _e:
+                _append_log(job_id, f"Error membuat diagram batang HAC: {_e}")
             cb("Membuat komposisi jenis pestisida per cluster (HAC)...")
             hac_jenis = os.path.join(STATIC_GEN_DIR, f"komposisi_jenis_hac_{mtag}_job_{job_id}_{ts}.png")
-            buat_plot_komposisi_jenis_stacked(df_hac, "cluster_hac", hac_jenis, "Komposisi Jenis Pestisida per Cluster (HAC)")
+            try:
+                buat_plot_komposisi_jenis_stacked(df_hac, "cluster_hac", hac_jenis, "Komposisi Jenis Pestisida per Cluster (HAC)")
+            except Exception as _e:
+                _append_log(job_id, f"Error membuat komposisi jenis HAC: {_e}")
             cb("Membuat boxplot sebaran volume per cluster (HAC)...")
             hac_box = os.path.join(STATIC_GEN_DIR, f"boxplot_volume_hac_{mtag}_job_{job_id}_{ts}.png")
-            buat_plot_boxplot_volume(df_hac, "cluster_hac", hac_box, "Sebaran Volume per Cluster (HAC)")
+            try:
+                buat_plot_boxplot_volume(df_hac, "cluster_hac", hac_box, "Sebaran Volume per Cluster (HAC)")
+            except Exception as _e:
+                _append_log(job_id, f"Error membuat boxplot volume HAC: {_e}")
             out_hac = os.path.join(UPLOAD_DIR, f"job_{job_id}_hasil_hac.csv")
             df_hac_out = df_hac.drop(columns=["distributor_kode", "area_kode"], errors="ignore")
             df_hac_out.to_csv(out_hac, index=False)
