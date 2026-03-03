@@ -86,38 +86,41 @@
       </div>
     </div>
   </div>
+{% endblock %}
 
+{% block scripts %}
   <script>
     const jobId = {{ job.id }};
     const logBox = document.getElementById("logBox");
     // Flag untuk menandai apakah kita sedang memantau proses yang berjalan
-    // Kita hanya ingin redirect jika status berubah dari 'clustering' ke 'done'
-    // Jika saat load sudah 'done', jangan redirect agar user bisa re-run.
     let isMonitoring = false;
 
     async function refreshLogs() {
-      const r = await fetch(`/api/job/${jobId}/logs`);
-      if (!r.ok) return;
-      const data = await r.json();
-      logBox.textContent = (data.logs || []).join("\n");
-      logBox.scrollTop = logBox.scrollHeight;
+      try {
+        const r = await fetch(`/api/job/${jobId}/logs`);
+        if (!r.ok) return;
+        const data = await r.json();
+        
+        if (logBox) {
+            logBox.textContent = (data.logs || []).join("\n");
+            logBox.scrollTop = logBox.scrollHeight;
+        }
 
-      // Jika statusnya clustering, kita set monitoring true
-      if (["preprocessing", "clustering"].includes(data.status)) {
-        isMonitoring = true;
-        setTimeout(refreshLogs, 1200);
-      } 
-      // Jika done DAN kita sedang monitoring (artinya baru saja selesai), maka redirect
-      else if (data.status === 'done' && isMonitoring) {
-         window.location.href = "{{ url_for('hasil') }}";
+        // Jika statusnya clustering, kita set monitoring true
+        if (["preprocessing", "clustering"].includes(data.status)) {
+          isMonitoring = true;
+          setTimeout(refreshLogs, 1200);
+        } 
+        // Jika done DAN kita sedang monitoring (artinya baru saja selesai), maka redirect
+        else if (data.status === 'done' && isMonitoring) {
+           window.location.href = "{{ url_for('hasil') }}";
+        }
+      } catch (e) {
+        console.error("Log fetch error:", e);
       }
-      // Jika status done tapi isMonitoring false (artinya pas load page sudah done),
-      // maka diam saja (tidak redirect).
     }
     
-    // Cek status awal untuk inisialisasi isMonitoring
-    // Namun karena refreshLogs async, kita bisa manfaatkan closure variable di atas.
-    // Panggil sekali saat load.
+    // Mulai refresh log
     refreshLogs();
   </script>
 {% endblock %}

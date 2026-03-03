@@ -1,0 +1,44 @@
+<div class="flex justify-between rounded-xl bg-black/20 border border-white/10 px-4 py-3">
+  <span>Jumlah awal</span><span class="font-semibold">{{ ringkasan.jumlah_awal }}</span>
+</div>
+<div class="flex justify-between rounded-xl bg-black/20 border border-white/10 px-4 py-3">
+  <span>Data bersih</span><span class="font-semibold">{{ ringkasan.jumlah_setelah_bersih }}</span>
+</div>
+<div class="flex justify-between rounded-xl bg-black/20 border border-white/10 px-4 py-3">
+  <span>Dihapus karena NA</span><span class="font-semibold">{{ ringkasan.jumlah_dihapus_na }}</span>
+</div>
+{% if ringkasan.jumlah_missing_diisi is defined %}
+  <div class="flex justify-between rounded-xl bg-black/20 border border-white/10 px-4 py-3">
+    <span>Missing value diisi (placeholder)</span><span class="font-semibold">{{ ringkasan.jumlah_missing_diisi }}</span>
+  </div>
+{% endif %}
+<div class="flex justify-between rounded-xl bg-black/20 border border-white/10 px-4 py-3">
+  <span>Dihapus duplikasi</span><span class="font-semibold">{{ ringkasan.jumlah_dihapus_duplikat }}</span>
+</div>
+<div class="rounded-xl bg-black/20 border border-white/10 px-4 py-3">
+  <div class="text-xs text-slate-200/70">Min–Maks Volume</div>
+  <div class="mt-1 text-sm font-semibold">{{ ringkasan.volume_min }} → {{ ringkasan.volume_max }}</div>
+</div>
+{% if ringkasan.volume_norm_min is defined %}
+  <div class="rounded-xl bg-black/20 border border-white/10 px-4 py-3">
+    <div class="text-xs text-slate-200/70">Rentang Volume Normalisasi</div>
+    <div class="mt-1 text-sm font-semibold">{{ ringkasan.volume_norm_min }} → {{ ringkasan.volume_norm_max }}</div>
+  </div>
+{% endif %}
+{% if ringkasan.kolom_baru is defined and ringkasan.kolom_baru %}
+  <div class="rounded-xl bg-black/20 border border-white/10 px-4 py-3">
+    <div class="text-xs text-slate-200/70">Kolom hasil transformasi</div>
+    <div class="mt-2 text-xs text-slate-200/80">{{ ringkasan.kolom_baru|join(', ') }}</div>
+  </div>
+{% endif %}
+{% if ringkasan.jumlah_unik_distributor is defined %}
+  <div class="rounded-xl bg-black/20 border border-white/10 px-4 py-3">
+    <div class="text-xs text-slate-200/70">Jumlah unik (setelah encoding)</div>
+    <div class="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-200/80">
+      <div>Distributor: <span class="font-semibold">{{ ringkasan.jumlah_unik_distributor }}</span></div>
+      <div>Area: <span class="font-semibold">{{ ringkasan.jumlah_unik_area }}</span></div>
+      <div>Regency: <span class="font-semibold">{{ ringkasan.jumlah_unik_regency }}</span></div>
+      <div>Product: <span class="font-semibold">{{ ringkasan.jumlah_unik_product }}</span></div>
+    </div>
+  </div>
+{% endif %}
